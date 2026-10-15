@@ -1,9 +1,11 @@
-# ZapConvert for CasaOS (App Store > Custom Install > Import, or an app store repository).
+# ZapConvert for CasaOS / ZimaOS (App Store > Custom Install > Import, or the CasaOS AppStore).
+# AppStore v2 format: store metadata in the top-level x-casaos block. The AppStore copy swaps the
+# zapconvert.app asset URLs for files in its Apps/ZapConvert directory.
 name: zapconvert
 
 services:
   zapconvert-web:
-    image: ghcr.io/zapconvert/zapconvert:latest
+    image: ghcr.io/zapconvert/zapconvert:1.0.0
     container_name: zapconvert-web
     ports:
       - target: 3000
@@ -25,14 +27,14 @@ services:
       ports:
         - container: "3000"
           description:
-            en_us: Web interface
+            en_US: Web interface
       envs:
         - container: LICENSE_KEY
           description:
-            en_us: Optional Lifetime Pass key. Unlocks Self-Hosted Pro (1 GB server uploads, no footer credit).
+            en_US: Optional Lifetime Pass key. Unlocks Self-Hosted Pro (1 GB server uploads, no footer credit).
         - container: MEDIA_WORKER_TOKEN
           description:
-            en_us: Optional shared secret. Use the same value as WORKER_TOKEN on the media worker.
+            en_US: Optional shared secret. Use the same value as WORKER_TOKEN on the media worker.
 
   zapconvert-gotenberg:
     image: gotenberg/gotenberg:8
@@ -55,7 +57,7 @@ services:
     restart: unless-stopped
 
   zapconvert-media-worker:
-    image: ghcr.io/zapconvert/zapconvert-media-worker:latest
+    image: ghcr.io/zapconvert/zapconvert-media-worker:1.0.0
     container_name: zapconvert-media-worker
     environment:
       WORKER_TOKEN: ""
@@ -76,7 +78,7 @@ services:
       envs:
         - container: WORKER_TOKEN
           description:
-            en_us: Optional shared secret. Must match MEDIA_WORKER_TOKEN on the web container.
+            en_US: Optional shared secret. Must match MEDIA_WORKER_TOKEN on the web container.
 
 networks:
   edge: {}
@@ -84,33 +86,44 @@ networks:
     internal: true
 
 x-casaos:
-  architectures:
-    - amd64
-    - arm64
+  id: app.zapconvert
   main: zapconvert-web
   index: /
   port_map: "3380"
   scheme: http
-  author: TeaGee Labs
-  developer: TeaGee Labs
-  category: Utilities
-  icon: https://zapconvert.app/brand/icon-256.png
-  thumbnail: https://zapconvert.app/brand/screenshot-desktop.png
+  icon: https://zapconvert.app/brand/icon-512.png
+  thumbnail: https://zapconvert.app/opengraph-image
   screenshot_link:
     - https://zapconvert.app/brand/screenshot-desktop.png
     - https://zapconvert.app/brand/screenshot-preview.png
     - https://zapconvert.app/brand/screenshot-mobile.png
   title:
-    en_us: ZapConvert
+    en_US: ZapConvert
   tagline:
-    en_us: Private file converter. No ads, no tracking, files never stored.
+    en_US: Private file converter. Most tools run in your browser.
   description:
-    en_us: >-
-      Convert, compress, merge, split and protect PDFs, Office documents, images, spreadsheets,
-      audio and video from any browser on your network. Most tools run inside the browser, so files
-      never leave the device. Office, PDF to Word or Excel and media conversions run in the two
-      companion containers, which process files in RAM and never store them. No ads, no accounts.
+    en_US: |-
+      Convert, compress, merge, split and protect PDFs, Office documents, images, spreadsheets, audio and video from any browser on your network.
+
+      38 of the 52 tools run entirely in the browser (pdf-lib, PDF.js, Tesseract and qpdf compiled to WebAssembly), so files never leave the device. Office to PDF, PDF to Word or Excel, and audio and video conversions run in two companion containers, Gotenberg and an ffmpeg worker, which sit on an internal network with no published ports and work in RAM, so nothing is written to disk.
+
+      No ads, no analytics, no accounts, and no internet access needed once installed. The free Community edition allows 100 MB per file for server conversions; an optional Lifetime Pass unlocks 1 GB and removes the footer credit.
   tips:
     before_install:
-      en_us: >-
-        The app is stateless and needs no storage. Set LICENSE_KEY only if you have a Lifetime Pass.
+      en_US: >-
+        The app is stateless and needs no storage. Large video conversions use RAM as scratch space
+        (up to 2 GB by default). Set LICENSE_KEY only if you have a Lifetime Pass.
+  author: TeaGee Labs
+  developer: TeaGee Labs
+  category: Productivity
+  architectures:
+    - amd64
+    - arm64
+  version: "1.0.0"
+  update_at: "2026-10-15"
+  release_notes:
+    en_US: First release.
+  website: https://zapconvert.app
+  repo: https://github.com/zapconvert/zapconvert
+  support: https://github.com/zapconvert/zapconvert/issues
+  docs: https://github.com/zapconvert/zapconvert#readme
