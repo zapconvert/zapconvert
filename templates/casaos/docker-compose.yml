@@ -1,0 +1,116 @@
+# ZapConvert for CasaOS (App Store > Custom Install > Import, or an app store repository).
+name: zapconvert
+
+services:
+  zapconvert-web:
+    image: ghcr.io/zapconvert/zapconvert:latest
+    container_name: zapconvert-web
+    ports:
+      - target: 3000
+        published: "3380"
+        protocol: tcp
+    environment:
+      GOTENBERG_URL: "http://zapconvert-gotenberg:3000"
+      MEDIA_WORKER_URL: "http://zapconvert-media-worker:8080"
+      MEDIA_WORKER_TOKEN: ""
+      LICENSE_KEY: ""
+    networks: [edge, backend]
+    depends_on:
+      zapconvert-gotenberg:
+        condition: service_healthy
+      zapconvert-media-worker:
+        condition: service_healthy
+    restart: unless-stopped
+    x-casaos:
+      ports:
+        - container: "3000"
+          description:
+            en_us: Web interface
+      envs:
+        - container: LICENSE_KEY
+          description:
+            en_us: Optional Lifetime Pass key. Unlocks Self-Hosted Pro (1 GB server uploads, no footer credit).
+        - container: MEDIA_WORKER_TOKEN
+          description:
+            en_us: Optional shared secret. Use the same value as WORKER_TOKEN on the media worker.
+
+  zapconvert-gotenberg:
+    image: gotenberg/gotenberg:8
+    container_name: zapconvert-gotenberg
+    command:
+      - "gotenberg"
+      - "--api-timeout=120s"
+      - "--libreoffice-auto-start=true"
+      - "--chromium-disable-routes=true"
+      - "--log-level=error"
+    tmpfs:
+      - /tmp:size=1024m,mode=1777
+    networks: [backend]
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3000/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    restart: unless-stopped
+
+  zapconvert-media-worker:
+    image: ghcr.io/zapconvert/zapconvert-media-worker:latest
+    container_name: zapconvert-media-worker
+    environment:
+      WORKER_TOKEN: ""
+      MAX_UPLOAD_MB: "1024"
+      MAX_JOBS: "2"
+      JOB_TIMEOUT_SEC: "300"
+    tmpfs:
+      - /work:size=2048m,mode=1777
+    networks: [backend]
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8080/health',timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    restart: unless-stopped
+    x-casaos:
+      envs:
+        - container: WORKER_TOKEN
+          description:
+            en_us: Optional shared secret. Must match MEDIA_WORKER_TOKEN on the web container.
+
+networks:
+  edge: {}
+  backend:
+    internal: true
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: zapconvert-web
+  index: /
+  port_map: "3380"
+  scheme: http
+  author: TeaGee Labs
+  developer: TeaGee Labs
+  category: Utilities
+  icon: https://zapconvert.app/brand/icon-256.png
+  thumbnail: https://zapconvert.app/brand/screenshot-desktop.png
+  screenshot_link:
+    - https://zapconvert.app/brand/screenshot-desktop.png
+    - https://zapconvert.app/brand/screenshot-preview.png
+    - https://zapconvert.app/brand/screenshot-mobile.png
+  title:
+    en_us: ZapConvert
+  tagline:
+    en_us: Private file converter. No ads, no tracking, files never stored.
+  description:
+    en_us: >-
+      Convert, compress, merge, split and protect PDFs, Office documents, images, spreadsheets,
+      audio and video from any browser on your network. Most tools run inside the browser, so files
+      never leave the device. Office, PDF to Word or Excel and media conversions run in the two
+      companion containers, which process files in RAM and never store them. No ads, no accounts.
+  tips:
+    before_install:
+      en_us: >-
+        The app is stateless and needs no storage. Set LICENSE_KEY only if you have a Lifetime Pass.

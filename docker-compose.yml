@@ -1,0 +1,76 @@
+# ZapConvert, self-hosted. No ads, no tracking, files never stored. amd64 and arm64.
+#
+#   curl -fsSL https://zapconvert.app/docker-compose.yml -o docker-compose.yml
+#   docker compose up -d
+#   open http://<your-server>:3000
+#
+# Works as-is in Portainer, Dockge, Cosmos and TrueNAS "Install via YAML".
+# Settings (all optional) go in a .env file next to this one: WEB_PORT, ZAPCONVERT_VERSION,
+# LICENSE_KEY, MEDIA_WORKER_TOKEN and more. See https://github.com/zapconvert/zapconvert
+# Update: docker compose pull && docker compose up -d
+
+services:
+  zapconvert-web:
+    image: ${IMAGE_NAMESPACE:-ghcr.io/zapconvert}/zapconvert:${ZAPCONVERT_VERSION:-latest}
+    container_name: zapconvert-web
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    environment:
+      GOTENBERG_URL: "http://zapconvert-gotenberg:3000"
+      MEDIA_WORKER_URL: "http://zapconvert-media-worker:8080"
+      MEDIA_WORKER_TOKEN: ${MEDIA_WORKER_TOKEN:-}
+      # Optional: Lifetime Pass key, unlocks Self-Hosted Pro for every user of this instance.
+      LICENSE_KEY: ${LICENSE_KEY:-}
+      CONVERT_MAX_UPLOAD_MB: ${CONVERT_MAX_UPLOAD_MB:-}
+      PRO_MAX_UPLOAD_MB: ${PRO_MAX_UPLOAD_MB:-}
+    networks: [edge, backend]
+    depends_on:
+      zapconvert-gotenberg:
+        condition: service_healthy
+      zapconvert-media-worker:
+        condition: service_healthy
+    restart: unless-stopped
+
+  zapconvert-gotenberg:
+    image: gotenberg/gotenberg:8
+    container_name: zapconvert-gotenberg
+    command:
+      - "gotenberg"
+      - "--api-timeout=120s"
+      - "--libreoffice-auto-start=true"
+      - "--chromium-disable-routes=true"
+      - "--log-level=error"
+    tmpfs:
+      - /tmp:size=${GOTENBERG_SCRATCH_SIZE:-1024m},mode=1777
+    networks: [backend]
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3000/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    restart: unless-stopped
+
+  zapconvert-media-worker:
+    image: ${IMAGE_NAMESPACE:-ghcr.io/zapconvert}/zapconvert-media-worker:${ZAPCONVERT_VERSION:-latest}
+    container_name: zapconvert-media-worker
+    environment:
+      WORKER_TOKEN: ${MEDIA_WORKER_TOKEN:-}
+      MAX_UPLOAD_MB: ${PRO_MAX_UPLOAD_MB:-1024}
+      MAX_JOBS: ${MEDIA_MAX_JOBS:-2}
+      JOB_TIMEOUT_SEC: "300"
+    tmpfs:
+      - /work:size=${MEDIA_SCRATCH_SIZE:-2048m},mode=1777
+    networks: [backend]
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8080/health',timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    restart: unless-stopped
+
+networks:
+  edge: {}
+  backend:
+    internal: true

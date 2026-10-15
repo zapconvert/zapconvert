@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>zapconvert-media-worker</Name>
+  <Repository>ghcr.io/zapconvert/zapconvert-media-worker:latest</Repository>
+  <Registry>https://ghcr.io/zapconvert/zapconvert-media-worker</Registry>
+  <Network>zapconvert</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/zapconvert/zapconvert/issues</Support>
+  <Project>https://zapconvert.app/licenses#source</Project>
+  <Overview>Audio, video, GIF, PDF to Word and PDF to Excel conversions for ZapConvert (ffmpeg, pdf2docx, PyMuPDF). It has no published port: only containers on the zapconvert network can reach it. Files are processed in RAM and deleted after each job. Licensed AGPL-3.0; the source is served by every ZapConvert instance at /source/zapconvert-media-worker.zip.</Overview>
+  <Category>Productivity: Tools:Utilities MediaApp:Video</Category>
+  <WebUI/>
+  <TemplateURL>https://raw.githubusercontent.com/zapconvert/unraid-templates/main/zapconvert-media-worker.xml</TemplateURL>
+  <Icon>https://zapconvert.app/brand/icon-512.png</Icon>
+  <ExtraParams>--restart=unless-stopped --tmpfs /work:size=2048m,mode=1777</ExtraParams>
+  <PostArgs/>
+  <CPUset/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires>Create the network once in the Unraid terminal: docker network create zapconvert</Requires>
+  <Config Name="Worker token" Target="WORKER_TOKEN" Default="" Mode="" Description="Optional shared secret. Must match Media worker token in the zapconvert container." Type="Variable" Display="advanced" Required="false" Mask="true"/>
+  <Config Name="Max upload (MB)" Target="MAX_UPLOAD_MB" Default="1024" Mode="" Description="Largest file the worker accepts." Type="Variable" Display="advanced" Required="false" Mask="false">1024</Config>
+  <Config Name="Concurrent jobs" Target="MAX_JOBS" Default="2" Mode="" Description="Conversions run at the same time. Raise on hosts with many cores." Type="Variable" Display="advanced" Required="false" Mask="false">2</Config>
+  <Config Name="Job timeout (seconds)" Target="JOB_TIMEOUT_SEC" Default="300" Mode="" Description="A conversion running longer than this is stopped." Type="Variable" Display="advanced" Required="false" Mask="false">300</Config>
+</Container>

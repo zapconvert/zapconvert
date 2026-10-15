@@ -1,0 +1,65 @@
+# ZapConvert for TrueNAS SCALE 24.10+ (Apps > Discover Apps > Custom App > Install via YAML).
+# Paste this whole file. The web interface is on port 30380 (TrueNAS keeps 1-1024 and most of
+# the low range busy). Optional: set LICENSE_KEY to a Lifetime Pass key for Self-Hosted Pro, and
+# MEDIA_WORKER_TOKEN to the same random value (openssl rand -hex 32) in both places below.
+# The app is stateless: there are no datasets to create and nothing is written to the pool.
+
+services:
+  zapconvert-web:
+    image: ghcr.io/zapconvert/zapconvert:1.0.0
+    ports:
+      - "30380:3000"
+    environment:
+      GOTENBERG_URL: "http://zapconvert-gotenberg:3000"
+      MEDIA_WORKER_URL: "http://zapconvert-media-worker:8080"
+      MEDIA_WORKER_TOKEN: ""
+      LICENSE_KEY: ""
+    networks: [edge, backend]
+    depends_on:
+      zapconvert-gotenberg:
+        condition: service_healthy
+      zapconvert-media-worker:
+        condition: service_healthy
+    restart: unless-stopped
+
+  zapconvert-gotenberg:
+    image: gotenberg/gotenberg:8
+    command:
+      - "gotenberg"
+      - "--api-timeout=120s"
+      - "--libreoffice-auto-start=true"
+      - "--chromium-disable-routes=true"
+      - "--log-level=error"
+    tmpfs:
+      - /tmp:size=1024m,mode=1777
+    networks: [backend]
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3000/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    restart: unless-stopped
+
+  zapconvert-media-worker:
+    image: ghcr.io/zapconvert/zapconvert-media-worker:1.0.0
+    environment:
+      WORKER_TOKEN: ""
+      MAX_UPLOAD_MB: "1024"
+      MAX_JOBS: "2"
+      JOB_TIMEOUT_SEC: "300"
+    tmpfs:
+      - /work:size=2048m,mode=1777
+    networks: [backend]
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8080/health',timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    restart: unless-stopped
+
+networks:
+  edge: {}
+  backend:
+    internal: true
