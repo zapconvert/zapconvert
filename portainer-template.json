@@ -1,0 +1,33 @@
+{
+  "type": 3,
+  "title": "ZapConvert",
+  "name": "zapconvert",
+  "description": "Private file converter for PDFs, Office documents, images, spreadsheets, audio and video. 38 of its 52 tools run in the browser, so files never leave the device; Office and media conversions run in RAM-only companion containers. Source: https://github.com/zapconvert/zapconvert",
+  "categories": ["Productivity", "Tools", "Documents"],
+  "platform": "linux",
+  "logo": "https://raw.githubusercontent.com/zapconvert/zapconvert/main/assets/icon-512.png",
+  "restart_policy": "unless-stopped",
+  "repository": {
+    "url": "https://github.com/zapconvert/zapconvert",
+    "stackfile": "docker-compose.yml"
+  },
+  "env": [
+    {
+      "name": "WEB_PORT",
+      "label": "Web UI port",
+      "description": "Host port for the web interface.",
+      "default": "3000"
+    },
+    {
+      "name": "LICENSE_KEY",
+      "label": "Lifetime Pass key (optional)",
+      "description": "Leave empty for the free Community edition. A Lifetime Pass key unlocks 1 GB server uploads and hides the footer credit."
+    },
+    {
+      "name": "MEDIA_WORKER_TOKEN",
+      "label": "Media worker token (optional)",
+      "description": "Shared secret between the web app and the media worker. Generate one with: openssl rand -hex 32"
+    }
+  ],
+  "note": "No setup needed. Open <code>http://&lt;your-host&gt;:3000</code> (or the port you chose). Office and media conversions become available once the Gotenberg and media worker containers report healthy, which can take a minute or two on first start. Docs: <a href=\"https://github.com/zapconvert/zapconvert#readme\" target=\"_blank\">github.com/zapconvert/zapconvert</a>"
+}
